@@ -155,11 +155,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
 .topbar-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
 .erp-badge { background-color: #2ea043; color: white; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; margin-left: 8px;}
 
-/* ══════════════════════════════════════════════════════════════
-   IMPRESSÃO — Separação em PAISAGEM, Fornecedor em RETRATO
-   ══════════════════════════════════════════════════════════════ */
-
-/* --- Retrato (padrão para Fornecedor e Lojas) --- */
+/* IMPRESSÃO */
 @media print {
     @page { size: A4 portrait; margin: 8mm 8mm; }
 
@@ -197,7 +193,6 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
     }
     .print-container { width: 100% !important; display: block !important; }
 
-    /* ── BASE COMUM ── */
     table.print-table {
         width: 100% !important;
         border-collapse: collapse !important;
@@ -216,9 +211,7 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
         overflow: hidden !important;
         text-overflow: ellipsis !important;
     }
-    /* dados: sem quebra */
     table.print-table td { white-space: nowrap !important; }
-    /* cabeçalhos: podem quebrar linha para caber o nome completo */
     table.print-table th {
         background-color: #d5d5d5 !important;
         font-weight: bold !important;
@@ -231,7 +224,6 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
     }
     table.print-table tr { break-inside: avoid !important; page-break-inside: avoid !important; }
 
-    /* ══ VISÃO DAS LOJAS — retrato (5 colunas) ══ */
     table.print-loja { font-size: 10px !important; }
     table.print-loja th:nth-child(1), table.print-loja td:nth-child(1) { width: 15% !important; text-align: left !important; }
     table.print-loja th:nth-child(2), table.print-loja td:nth-child(2) { width: 10% !important; text-align: center !important; }
@@ -243,36 +235,23 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
         -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
     }
 
-    /* ══ VISÃO POR FORNECEDOR — retrato (11 colunas)
-       Cód(7%) | Produto(29%) | Loja01..08 (cada 6.5%) | TOTAL(8%)
-       white-space:normal nos <th> garante que "Loja 01" apareça inteiro. ══ */
     table.print-forn { font-size: 7.5px !important; }
-    table.print-forn th:nth-child(1), table.print-forn td:nth-child(1) {
-        width: 7% !important; text-align: center !important;
-    }
-    table.print-forn th:nth-child(2), table.print-forn td:nth-child(2) {
-        width: 29% !important; text-align: left !important;
-    }
+    table.print-forn th:nth-child(1), table.print-forn td:nth-child(1) { width: 7% !important; text-align: center !important; }
+    table.print-forn th:nth-child(2), table.print-forn td:nth-child(2) { width: 29% !important; text-align: left !important; }
     table.print-forn th:nth-child(n+3):nth-child(-n+10),
-    table.print-forn td:nth-child(n+3):nth-child(-n+10) {
-        width: 6.5% !important; text-align: center !important;
-    }
+    table.print-forn td:nth-child(n+3):nth-child(-n+10) { width: 6.5% !important; text-align: center !important; }
     table.print-forn th:nth-child(11), table.print-forn td:nth-child(11) {
         width: 8% !important; text-align: center !important;
         font-weight: bold !important; background-color: #eeeeee !important;
         -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
     }
 
-    /* ══ SEPARAÇÃO E FECHAMENTO — paisagem A4 injetada por JS no botão
-       Fornecedor(11%) | Cód(7%) | Produto(26%) | 8×Loja(6%) | TOTAL(7%) ══ */
     table.print-sep { font-size: 9px !important; }
     table.print-sep th:nth-child(1), table.print-sep td:nth-child(1) { width: 11% !important; text-align: left !important; }
     table.print-sep th:nth-child(2), table.print-sep td:nth-child(2) { width: 7%  !important; text-align: center !important; }
     table.print-sep th:nth-child(3), table.print-sep td:nth-child(3) { width: 26% !important; text-align: left !important; }
     table.print-sep th:nth-child(n+4):nth-child(-n+11),
-    table.print-sep td:nth-child(n+4):nth-child(-n+11) {
-        width: 6% !important; text-align: center !important;
-    }
+    table.print-sep td:nth-child(n+4):nth-child(-n+11) { width: 6% !important; text-align: center !important; }
     table.print-sep th:nth-child(12), table.print-sep td:nth-child(12) {
         width: 7% !important; text-align: center !important;
         font-weight: bold !important; background-color: #eeeeee !important;
@@ -293,7 +272,6 @@ LOJAS = ["Loja 01", "Loja 02", "Loja 03", "Loja 04", "Loja 05", "Loja 06", "Loja
 MAPA_LOJAS = {l: l for l in LOJAS}
 
 produtos_iniciais = [
-    # ── PIONEIRO ──────────────────────────────────────────────────────────────
     {"Fornecedor": "PIONEIRO", "Código": 655527, "Descrição Oficial": "Coracao Frango 500g Pioneiro Bdj Resf", "Nome Personalizado": ""},
     {"Fornecedor": "PIONEIRO", "Código": 655518, "Descrição Oficial": "Coxa Frango 500g Pioneiro Bdj Resf", "Nome Personalizado": ""},
     {"Fornecedor": "PIONEIRO", "Código": 655509, "Descrição Oficial": "Coxa Sobrecoxa 500g Pioneiro S/Osso S/Pele Bdj Resf", "Nome Personalizado": ""},
@@ -305,18 +283,15 @@ produtos_iniciais = [
     {"Fornecedor": "PIONEIRO", "Código": 655341, "Descrição Oficial": "Meio Asa 500g Pioneiro Bdj Resf", "Nome Personalizado": ""},
     {"Fornecedor": "PIONEIRO", "Código": 655332, "Descrição Oficial": "Moela Frango 500g Pioneiro Bdj Resf", "Nome Personalizado": ""},
     {"Fornecedor": "PIONEIRO", "Código": 655323, "Descrição Oficial": "Sobrecoxa 500g Pioneiro Bdj Resf", "Nome Personalizado": ""},
-    # ── FRANGO PARANÁ ─────────────────────────────────────────────────────────
     {"Fornecedor": "FRANGO PARANÁ", "Código": 139773, "Descrição Oficial": "Pe Frango Kg Bdj", "Nome Personalizado": ""},
     {"Fornecedor": "FRANGO PARANÁ", "Código": 140982, "Descrição Oficial": "Dorso Kg", "Nome Personalizado": ""},
     {"Fornecedor": "FRANGO PARANÁ", "Código": 379043, "Descrição Oficial": "Peito Frango Kg Parana", "Nome Personalizado": ""},
     {"Fornecedor": "FRANGO PARANÁ", "Código": 82679,  "Descrição Oficial": "Frango Kg Parana", "Nome Personalizado": ""},
     {"Fornecedor": "FRANGO PARANÁ", "Código": 526748, "Descrição Oficial": "Pescoco Frango Kg", "Nome Personalizado": ""},
-    # ── BIG FRANGO — TEMPERADOS ───────────────────────────────────────────────
     {"Fornecedor": "BIG FRANGO - TEMPERADOS", "Código": 48323,  "Descrição Oficial": "Coxinha Asa Temp Kg Big", "Nome Personalizado": ""},
     {"Fornecedor": "BIG FRANGO - TEMPERADOS", "Código": 20350,  "Descrição Oficial": "Frango Pass Temp Kg Big", "Nome Personalizado": ""},
     {"Fornecedor": "BIG FRANGO - TEMPERADOS", "Código": 48330,  "Descrição Oficial": "Meio Asa Temp Kg Big", "Nome Personalizado": ""},
     {"Fornecedor": "BIG FRANGO - TEMPERADOS", "Código": 168951, "Descrição Oficial": "Sobrecoxa Temp Kg Big", "Nome Personalizado": ""},
-    # ── BIG FRANGO — MIX BANDEJAS ─────────────────────────────────────────────
     {"Fornecedor": "BIG FRANGO - MIX BANDEJAS", "Código": 352259, "Descrição Oficial": "Coxa Frango Kg Big Band Padrao Resf", "Nome Personalizado": ""},
     {"Fornecedor": "BIG FRANGO - MIX BANDEJAS", "Código": 352161, "Descrição Oficial": "Coxa Sobrecoxa Kg Big Band Padrao Resf", "Nome Personalizado": ""},
     {"Fornecedor": "BIG FRANGO - MIX BANDEJAS", "Código": 352213, "Descrição Oficial": "Coxinha Asa Kg Big Band Padrao Resf", "Nome Personalizado": ""},
@@ -326,11 +301,9 @@ produtos_iniciais = [
     {"Fornecedor": "BIG FRANGO - MIX BANDEJAS", "Código": 352268, "Descrição Oficial": "Moela Kg Big Band Resf", "Nome Personalizado": ""},
     {"Fornecedor": "BIG FRANGO - MIX BANDEJAS", "Código": 352222, "Descrição Oficial": "Peito Frango Kg Big Band Padrao Resf", "Nome Personalizado": ""},
     {"Fornecedor": "BIG FRANGO - MIX BANDEJAS", "Código": 352170, "Descrição Oficial": "Sobrecoxa Kg Big Band Padrao Resf", "Nome Personalizado": ""},
-    # ── BIG FRANGO — MIX BALCÃO ───────────────────────────────────────────────
     {"Fornecedor": "BIG FRANGO - MIX BALCÃO", "Código": 75305, "Descrição Oficial": "Coxa Sobrecoxa Kg Big", "Nome Personalizado": ""},
     {"Fornecedor": "BIG FRANGO - MIX BALCÃO", "Código": 18005, "Descrição Oficial": "Coxinha Asa Kg Big", "Nome Personalizado": ""},
     {"Fornecedor": "BIG FRANGO - MIX BALCÃO", "Código": 75343, "Descrição Oficial": "File Peito Kg Big", "Nome Personalizado": ""},
-    # ── BIG FRANGO — MIX CONGELADO ────────────────────────────────────────────
     {"Fornecedor": "BIG FRANGO - MIX CONGELADO", "Código": 548236, "Descrição Oficial": "Sambiquira Frango 1kg Big Frango", "Nome Personalizado": ""},
 ]
 
@@ -342,9 +315,25 @@ conn = st.connection("gsheets", type=GSheetsConnection)
 WS_PRODUTOS = "AcEspeciais_Produtos"
 WS_PEDIDOS  = "AcEspeciais_Pecas"
 
+def parse_bool(x):
+    if isinstance(x, bool): return x
+    if isinstance(x, (int, float)): return bool(x) and not pd.isna(x)
+    return str(x).strip().upper() in ['TRUE', 'VERDADEIRO', '1', 'V', 'SIM', 'YES', 'T', 'X']
+
 @st.cache_data(ttl=15)
 def carregar_catalogo_acougue():
-    df = conn.read(worksheet=WS_PRODUTOS, ttl=0, usecols=list(range(20)))
+    try:
+        df = conn.read(worksheet=WS_PRODUTOS, ttl=0, usecols=list(range(20)))
+    except ValueError as e:
+        if "Spreadsheet must be specified" in str(e):
+            st.error("🚨 **Erro Crítico:** URL da Planilha não especificada nas configurações do Streamlit Cloud (Secrets).")
+            st.info("No painel do Streamlit, vá em **App settings > Secrets** e adicione o bloco:\n\n```toml\n[connections.gsheets]\nspreadsheet = \"URL_DA_SUA_PLANILHA\"\n```")
+            st.stop()
+        else:
+            raise e
+    except Exception as e:
+        st.error(f"Erro ao conectar na aba {WS_PRODUTOS}: {e}")
+        st.stop()
 
     if df.empty or "Fornecedor" not in df.columns:
         df_init = pd.DataFrame(produtos_iniciais)
@@ -377,10 +366,6 @@ def carregar_catalogo_acougue():
         if loja not in df.columns:
             df[loja] = False
         else:
-            def parse_bool(x):
-                if isinstance(x, bool): return x
-                if isinstance(x, (int, float)): return bool(x) and not pd.isna(x)
-                return str(x).strip().upper() in ['TRUE', 'VERDADEIRO', '1', 'V', 'SIM', 'YES', 'T', 'X']
             df[loja] = df[loja].apply(parse_bool)
 
     if "Código" in df.columns:
@@ -398,7 +383,19 @@ def carregar_catalogo_acougue():
 
 @st.cache_data(ttl=15)
 def carregar_pedidos():
-    df_pedidos = conn.read(worksheet=WS_PEDIDOS, ttl=0)
+    try:
+        df_pedidos = conn.read(worksheet=WS_PEDIDOS, ttl=0)
+    except ValueError as e:
+        if "Spreadsheet must be specified" in str(e):
+            st.error("🚨 **Erro Crítico:** URL da Planilha não especificada nas configurações do Streamlit Cloud (Secrets).")
+            st.info("No painel do Streamlit, vá em **App settings > Secrets** e adicione o bloco:\n\n```toml\n[connections.gsheets]\nspreadsheet = \"URL_DA_SUA_PLANILHA\"\n```")
+            st.stop()
+        else:
+            raise e
+    except Exception as e:
+        st.error(f"Erro ao conectar na aba {WS_PEDIDOS}: {e}")
+        st.stop()
+
     df_cat = carregar_catalogo_acougue()
 
     if df_pedidos.empty or "Código" not in df_pedidos.columns:
@@ -736,7 +733,11 @@ elif perfil_navegacao == "Visão das Lojas":
             df_loja_view["Estoque"] = 0
 
     except Exception as e:
-        st.error(f"⚠️ Erro ao puxar dados do ERP PostgreSQL: {e}")
+        # Se a conexão do postgres falhar porque o banco não configurou nos secrets (igual a do gsheets)
+        if "No database configured" in str(e) or "missing" in str(e).lower():
+             st.error("⚠️ Aviso: As credenciais do banco_erp também precisam estar nos Secrets do Streamlit para puxar o estoque.")
+        else:
+             st.error(f"⚠️ Erro ao puxar dados do ERP PostgreSQL: {e}")
         df_loja_view["Estoque"] = 0
 
     df_loja_view["Estoque"] = df_loja_view["Estoque"].fillna(0).astype(int)
@@ -892,11 +893,9 @@ elif perfil_navegacao == "Visão por Fornecedor (Resumo)":
                         </div>
                     """, unsafe_allow_html=True)
 
-                    # Gera HTML e substitui cabeçalhos "Loja 0X" por "L<br>0X"
-                    # para garantir que o nome completo apareça sem ser truncado
                     html_table = df_forn_edit.to_html(index=False, classes=["print-table", "print-forn"])
                     for loja in LOJAS:
-                        partes = loja.split(" ")  # ["Loja", "01"]
+                        partes = loja.split(" ")
                         if len(partes) == 2:
                             html_table = html_table.replace(
                                 f"<th>{loja}</th>",
@@ -1029,4 +1028,7 @@ elif perfil_navegacao == "Catálogo de Produtos":
                     st.success("✅ Nomes Oficiais sincronizados com sucesso!")
                     st.rerun()
                 except Exception as e:
-                    st.error(f"⚠️ Erro ao buscar nomes no banco ERP: {e}")
+                    if "No database configured" in str(e) or "missing" in str(e).lower():
+                         st.error("⚠️ Aviso: As credenciais de acesso ao PostgreSQL não foram encontradas no painel Secrets.")
+                    else:
+                         st.error(f"⚠️ Erro ao buscar nomes no banco ERP: {e}")
