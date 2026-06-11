@@ -9,7 +9,7 @@ from streamlit_gsheets import GSheetsConnection
 # ─────────────────────────────────────────────
 st.set_page_config(
     page_title="Gestão de Pedidos - Açougue Especial",
-    page_icon="🍗",
+    page_icon="🍖",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -155,9 +155,14 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
 .topbar-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
 .erp-badge { background-color: #2ea043; color: white; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 600; margin-left: 8px;}
 
-/* REGRAS DE IMPRESSÃO ABSOLUTAS - COMPACTADAS E SEM QUEBRA DE LINHA */
+/* ══════════════════════════════════════════════════════════════
+   IMPRESSÃO — Separação em PAISAGEM, Fornecedor em RETRATO
+   ══════════════════════════════════════════════════════════════ */
+
+/* --- Retrato (padrão para Fornecedor e Lojas) --- */
 @media print {
-    @page { margin: 2mm 5mm; }
+    @page { size: A4 portrait; margin: 8mm 8mm; }
+
     .stApp, .main, body, html {
         background-color: #ffffff !important;
         background-image: none !important;
@@ -165,96 +170,116 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
         padding: 0 !important;
         margin: 0 !important;
     }
-    header, [data-testid="stSidebar"], [data-testid="stHeader"] { 
-        display: none !important; 
-    }
-    
+    header, [data-testid="stSidebar"], [data-testid="stHeader"] { display: none !important; }
     [data-testid="stElementContainer"],
     [data-testid="stHorizontalBlock"],
-    div[data-testid="stVerticalBlockBorderWrapper"] {
-        display: none !important;
-    }
-    
+    div[data-testid="stVerticalBlockBorderWrapper"] { display: none !important; }
     [data-testid="stElementContainer"]:has(#print-section) {
-        display: block !important;
-        width: 100% !important;
+        display: block !important; width: 100% !important;
     }
-    
-    #print-section {
-        display: block !important;
-        width: 100% !important;
-    }
+    #print-section { display: block !important; width: 100% !important; }
     #print-section h2 {
         font-size: 13px !important;
-        margin: 0 0 5px 0 !important;
+        margin: 0 0 6px 0 !important;
         padding-bottom: 3px !important;
-        border-bottom: 1px solid #000 !important;
+        border-bottom: 2px solid #000 !important;
         color: #000 !important;
         display: block !important;
         text-align: center !important;
     }
     #print-section h3 {
         font-size: 10px !important;
+        font-weight: 700 !important;
         border-bottom: none !important;
-        margin-top: 10px !important;
+        margin-top: 12px !important;
         margin-bottom: 3px !important;
         color: #000 !important;
     }
-    .print-container { width: 100% !important; display: block !important;}
-    
-    /* BASE PARA TODAS AS TABELAS DE IMPRESSÃO */
+    .print-container { width: 100% !important; display: block !important; }
+
+    /* ── BASE COMUM ── */
     table.print-table {
         width: 100% !important;
         border-collapse: collapse !important;
         color: #000000 !important;
         font-family: 'IBM Plex Sans', sans-serif !important;
-        line-height: 1.1 !important;
+        line-height: 1.2 !important;
         display: table !important;
         table-layout: fixed !important;
-        margin-bottom: 3px !important;
+        margin-bottom: 4px !important;
     }
     table.print-table th, table.print-table td {
-        border: 1px solid #000000 !important;
-        padding: 0px 2px !important;
-        text-align: left;
+        border: 1px solid #444 !important;
+        padding: 2px 3px !important;
         color: #000000 !important;
         background-color: #ffffff !important;
-        white-space: nowrap !important;
         overflow: hidden !important;
         text-overflow: ellipsis !important;
     }
+    /* dados: sem quebra */
+    table.print-table td { white-space: nowrap !important; }
+    /* cabeçalhos: podem quebrar linha para caber o nome completo */
     table.print-table th {
-        background-color: #e0e0e0 !important;
+        background-color: #d5d5d5 !important;
         font-weight: bold !important;
         text-align: center !important;
+        white-space: normal !important;
+        word-break: break-word !important;
+        vertical-align: middle !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
     }
     table.print-table tr { break-inside: avoid !important; page-break-inside: avoid !important; }
 
-    /* MÁGICA ESPECÍFICA PARA A TELA DE SEPARAÇÃO (12 Colunas) */
-    table.print-sep { font-size: 8px !important; }
-    table.print-sep th:nth-child(1), table.print-sep td:nth-child(1) { width: 14% !important; }
-    table.print-sep th:nth-child(2), table.print-sep td:nth-child(2) { width: 6% !important; text-align: center !important; }
-    table.print-sep th:nth-child(3), table.print-sep td:nth-child(3) { width: 28% !important; }
-    table.print-sep th:nth-child(n+4):nth-child(-n+11), table.print-sep td:nth-child(n+4):nth-child(-n+11) { width: 5.5% !important; text-align: center !important; }
-    table.print-sep th:nth-child(12), table.print-sep td:nth-child(12) { width: 8% !important; text-align: center !important; font-weight: bold !important; background-color: #f0f0f0 !important; }
-
-    /* MÁGICA ESPECÍFICA PARA A TELA DE VISÃO DAS LOJAS (5 Colunas) */
+    /* ══ VISÃO DAS LOJAS — retrato (5 colunas) ══ */
     table.print-loja { font-size: 10px !important; }
-    table.print-loja th:nth-child(1), table.print-loja td:nth-child(1) { width: 15% !important; }
+    table.print-loja th:nth-child(1), table.print-loja td:nth-child(1) { width: 15% !important; text-align: left !important; }
     table.print-loja th:nth-child(2), table.print-loja td:nth-child(2) { width: 10% !important; text-align: center !important; }
-    table.print-loja th:nth-child(3), table.print-loja td:nth-child(3) { width: 45% !important; }
+    table.print-loja th:nth-child(3), table.print-loja td:nth-child(3) { width: 45% !important; text-align: left !important; }
     table.print-loja th:nth-child(4), table.print-loja td:nth-child(4) { width: 15% !important; text-align: center !important; }
-    table.print-loja th:nth-child(5), table.print-loja td:nth-child(5) { width: 15% !important; text-align: center !important; font-weight: bold !important; background-color: #f0f0f0 !important;}
+    table.print-loja th:nth-child(5), table.print-loja td:nth-child(5) {
+        width: 15% !important; text-align: center !important;
+        font-weight: bold !important; background-color: #eeeeee !important;
+        -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
+    }
 
-    /* MÁGICA ESPECÍFICA PARA A TELA DE VISÃO FORNECEDOR (11 Colunas) */
-    table.print-forn { font-size: 8.5px !important; }
-    table.print-forn th:nth-child(1), table.print-forn td:nth-child(1) { width: 8% !important; text-align: center !important; }
-    table.print-forn th:nth-child(2), table.print-forn td:nth-child(2) { width: 34% !important; }
-    table.print-forn th:nth-child(n+3):nth-child(-n+10), table.print-forn td:nth-child(n+3):nth-child(-n+10) { width: 6% !important; text-align: center !important; }
-    table.print-forn th:nth-child(11), table.print-forn td:nth-child(11) { width: 10% !important; text-align: center !important; font-weight: bold !important; background-color: #f0f0f0 !important;}
+    /* ══ VISÃO POR FORNECEDOR — retrato (11 colunas)
+       Cód(7%) | Produto(29%) | Loja01..08 (cada 6.5%) | TOTAL(8%)
+       white-space:normal nos <th> garante que "Loja 01" apareça inteiro. ══ */
+    table.print-forn { font-size: 7.5px !important; }
+    table.print-forn th:nth-child(1), table.print-forn td:nth-child(1) {
+        width: 7% !important; text-align: center !important;
+    }
+    table.print-forn th:nth-child(2), table.print-forn td:nth-child(2) {
+        width: 29% !important; text-align: left !important;
+    }
+    table.print-forn th:nth-child(n+3):nth-child(-n+10),
+    table.print-forn td:nth-child(n+3):nth-child(-n+10) {
+        width: 6.5% !important; text-align: center !important;
+    }
+    table.print-forn th:nth-child(11), table.print-forn td:nth-child(11) {
+        width: 8% !important; text-align: center !important;
+        font-weight: bold !important; background-color: #eeeeee !important;
+        -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
+    }
+
+    /* ══ SEPARAÇÃO E FECHAMENTO — paisagem A4 injetada por JS no botão
+       Fornecedor(11%) | Cód(7%) | Produto(26%) | 8×Loja(6%) | TOTAL(7%) ══ */
+    table.print-sep { font-size: 9px !important; }
+    table.print-sep th:nth-child(1), table.print-sep td:nth-child(1) { width: 11% !important; text-align: left !important; }
+    table.print-sep th:nth-child(2), table.print-sep td:nth-child(2) { width: 7%  !important; text-align: center !important; }
+    table.print-sep th:nth-child(3), table.print-sep td:nth-child(3) { width: 26% !important; text-align: left !important; }
+    table.print-sep th:nth-child(n+4):nth-child(-n+11),
+    table.print-sep td:nth-child(n+4):nth-child(-n+11) {
+        width: 6% !important; text-align: center !important;
+    }
+    table.print-sep th:nth-child(12), table.print-sep td:nth-child(12) {
+        width: 7% !important; text-align: center !important;
+        font-weight: bold !important; background-color: #eeeeee !important;
+        -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
+    }
 }
+
 @media screen {
     #print-section { display: none !important; }
 }
@@ -613,7 +638,20 @@ if perfil_navegacao == "Separação e Fechamento":
 
         with col_print:
             if st.button("🖨️ Imprimir", use_container_width=True):
-                components.html("<script>window.parent.print();</script>", height=0)
+                components.html(
+                    "<script>"
+                    "var s=document.createElement('style');"
+                    "s.id='__sep_land__';"
+                    "s.innerHTML='@media print{@page{size:A4 landscape!important;margin:6mm 10mm!important;}}';"
+                    "window.parent.document.head.appendChild(s);"
+                    "window.parent.print();"
+                    "setTimeout(function(){"
+                    "var e=window.parent.document.getElementById('__sep_land__');"
+                    "if(e)e.remove();"
+                    "},3000);"
+                    "</script>",
+                    height=0
+                )
 
         with col_zerar:
             if st.button("🚨 Zerar Todos os Pedidos", use_container_width=True):
@@ -854,7 +892,16 @@ elif perfil_navegacao == "Visão por Fornecedor (Resumo)":
                         </div>
                     """, unsafe_allow_html=True)
 
+                    # Gera HTML e substitui cabeçalhos "Loja 0X" por "L<br>0X"
+                    # para garantir que o nome completo apareça sem ser truncado
                     html_table = df_forn_edit.to_html(index=False, classes=["print-table", "print-forn"])
+                    for loja in LOJAS:
+                        partes = loja.split(" ")  # ["Loja", "01"]
+                        if len(partes) == 2:
+                            html_table = html_table.replace(
+                                f"<th>{loja}</th>",
+                                f"<th>{partes[0]}<br>{partes[1]}</th>"
+                            )
                     html_print_content += f"<h3 style='color: black; margin-top: 10px; margin-bottom: 4px;'>🍖 {fornecedor}</h3>\n"
                     html_print_content += f"{html_table}\n"
                     html_print_content += f"<div style='text-align:right; font-weight:bold; font-size:11px; margin-top:3px; margin-bottom: 8px; color: black;'>Total do Fornecedor: {total_geral} unidades</div>\n"
@@ -874,7 +921,20 @@ elif perfil_navegacao == "Visão por Fornecedor (Resumo)":
     _, col_print = st.columns([8, 2])
     with col_print:
         if st.button("🖨️ Imprimir Resumo Geral", use_container_width=True):
-            components.html("<script>window.parent.print();</script>", height=0)
+            components.html(
+                "<script>"
+                "var s=document.createElement('style');"
+                "s.id='__forn_port__';"
+                "s.innerHTML='@media print{@page{size:A4 portrait!important;margin:8mm 8mm!important;}}';"
+                "window.parent.document.head.appendChild(s);"
+                "window.parent.print();"
+                "setTimeout(function(){"
+                "var e=window.parent.document.getElementById('__forn_port__');"
+                "if(e)e.remove();"
+                "},3000);"
+                "</script>",
+                height=0
+            )
 
 # ─────────────────────────────────────────────
 # ROTA 4 — CATÁLOGO DE PRODUTOS
