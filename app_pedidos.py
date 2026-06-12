@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import io
+import requests
 import streamlit.components.v1 as components
 from streamlit_gsheets import GSheetsConnection
 
@@ -320,6 +321,22 @@ def parse_bool(x):
     if isinstance(x, (int, float)): return bool(x) and not pd.isna(x)
     return str(x).strip().upper() in ['TRUE', 'VERDADEIRO', '1', 'V', 'SIM', 'YES', 'T', 'X']
 
+# FUNÇÃO PARA ENVIAR MENSAGEM PELO TELEGRAM
+def notificar_telegram(mensagem):
+    try:
+        bot_token = st.secrets["telegram"]["bot_token"]
+        chat_id = st.secrets["telegram"]["chat_id"]
+        url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+        payload = {"chat_id": chat_id, "text": mensagem}
+        resposta = requests.post(url, json=payload)
+        return resposta.status_code == 200
+    except KeyError:
+        st.error("⚠️ Credenciais do Telegram não configuradas no secrets.toml.")
+        return False
+    except Exception as e:
+        st.error(f"⚠️ Erro de conexão ao enviar o Telegram: {e}")
+        return False
+
 @st.cache_data(ttl=15)
 def carregar_catalogo_acougue():
     try:
@@ -327,7 +344,7 @@ def carregar_catalogo_acougue():
     except ValueError as e:
         if "Spreadsheet must be specified" in str(e):
             st.error("🚨 **Erro Crítico:** URL da Planilha não especificada nas configurações do Streamlit Cloud (Secrets).")
-            st.info("No painel do Streamlit, vá em **App settings > Secrets** e adicione o bloco:\n\n```toml\n[connections.gsheets]\nspreadsheet = \"URL_DA_SUA_PLANILHA\"\n```")
+            st.info("No painel do Streamlit, vá em **App settings > Secrets** e adicione o bloco correspondente.")
             st.stop()
         else:
             raise e
@@ -388,7 +405,6 @@ def carregar_pedidos():
     except ValueError as e:
         if "Spreadsheet must be specified" in str(e):
             st.error("🚨 **Erro Crítico:** URL da Planilha não especificada nas configurações do Streamlit Cloud (Secrets).")
-            st.info("No painel do Streamlit, vá em **App settings > Secrets** e adicione o bloco:\n\n```toml\n[connections.gsheets]\nspreadsheet = \"URL_DA_SUA_PLANILHA\"\n```")
             st.stop()
         else:
             raise e
@@ -733,7 +749,6 @@ elif perfil_navegacao == "Visão das Lojas":
             df_loja_view["Estoque"] = 0
 
     except Exception as e:
-        # Se a conexão do postgres falhar porque o banco não configurou nos secrets (igual a do gsheets)
         if "No database configured" in str(e) or "missing" in str(e).lower():
              st.error("⚠️ Aviso: As credenciais do banco_erp também precisam estar nos Secrets do Streamlit para puxar o estoque.")
         else:
@@ -784,15 +799,32 @@ elif perfil_navegacao == "Visão das Lojas":
         pct              = round(itens_com_pedido / total_itens * 100) if total_itens else 0
 
         st.divider()
-        m1, m2, m3, col_print, col_btn = st.columns([2.5, 2.2, 1.8, 1.5, 3])
-        with m1: st.metric("Itens preenchidos", f"{itens_com_pedido} / {total_itens}")
-        with m2: st.metric("Total de unidades", total_unidades)
+        m1, m2, m3, col_print, col_aviso, col_btn = st.columns([1.5, 1.5, 1.5, 1.3, 2.4, 2.8])
+        with m1: st.metric("Itens", f"{itens_com_pedido}/{total_itens}")
+        with m2: st.metric("Unidades", total_unidades)
         with m3: st.metric("Cobertura", f"{pct}%")
 
         with col_print:
             st.write("<br>", unsafe_allow_html=True)
             if st.button("🖨️ Imprimir", use_container_width=True):
                 components.html("<script>window.parent.print();</script>", height=0)
+
+        with col_aviso:
+            st.write("<br>", unsafe_allow_html=True)
+            if st.button("🚫 Sem Pedido Hoje", use_container_width=True):
+                # Zera a loja atual na base de dados
+                df_main = carregar_pedidos()
+                df_main[loja_selecionada] = 0
+                salvar_pedidos(df_main)
+                
+                # Envia o aviso via Telegram
+                msg_aviso = f"🚨 *AVISO - Açougue Especial*\nA {loja_selecionada} informou que *NÃO* fará pedido de peças nesta semana."
+                enviado = notificar_telegram(msg_aviso)
+                
+                if enviado:
+                    st.success("✅ Supervisor avisado e pedido zerado!")
+                else:
+                    st.warning("⚠️ O pedido foi zerado, mas falhou ao enviar o Telegram (verifique as credenciais no Secrets).")
 
         with col_btn:
             st.write("<br>", unsafe_allow_html=True)
