@@ -6,6 +6,13 @@ import streamlit.components.v1 as components
 from streamlit_gsheets import GSheetsConnection
 
 # ─────────────────────────────────────────────
+# IMPORTAÇÕES PARA ESTILIZAÇÃO DO EXCEL
+# ─────────────────────────────────────────────
+from openpyxl import Workbook
+from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
+
+# ─────────────────────────────────────────────
 # CONFIGURAÇÃO DA PÁGINA
 # ─────────────────────────────────────────────
 st.set_page_config(
@@ -321,7 +328,6 @@ def parse_bool(x):
     if isinstance(x, (int, float)): return bool(x) and not pd.isna(x)
     return str(x).strip().upper() in ['TRUE', 'VERDADEIRO', '1', 'V', 'SIM', 'YES', 'T', 'X']
 
-# FUNÇÃO PARA ENVIAR MENSAGEM PELO TELEGRAM
 def notificar_telegram(mensagem):
     try:
         bot_token = st.secrets["telegram"]["bot_token"]
@@ -395,7 +401,6 @@ def carregar_catalogo_acougue():
         return str(row.get("Descrição Oficial", "")).strip()
 
     df["Descrição"] = df.apply(obter_nome_final, axis=1)
-
     return df
 
 @st.cache_data(ttl=15)
@@ -442,6 +447,93 @@ def salvar_catalogo(df_to_save):
     df_clean = df_to_save.drop(columns=["Descrição"], errors="ignore")
     conn.update(worksheet=WS_PRODUTOS, data=df_clean)
     st.cache_data.clear()
+
+# ─────────────────────────────────────────────
+# FUNÇÃO PARA EXCEL ESTILIZADO (VISÃO FORNECEDOR)
+# ─────────────────────────────────────────────
+def gerar_excel_fornecedor(df_all, nomes_forn):
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Resumo por Fornecedor"
+
+    # Definição de cores similares à planilha FLV
+    fill_header = PatternFill(start_color="D96B27", end_color="D96B27", fill_type="solid") # Marrom / Laranja escuro
+    font_header = Font(color="FFFFFF", bold=True)
+    align_center = Alignment(horizontal="center", vertical="center")
+    align_left = Alignment(horizontal="left", vertical="center")
+    border_thin = Border(
+        left=Side(style='thin', color='A6A6A6'),
+        right=Side(style='thin', color='A6A6A6'),
+        top=Side(style='thin', color='A6A6A6'),
+        bottom=Side(style='thin', color='A6A6A6')
+    )
+
+    fill_qty = PatternFill(start_color="E2EFDA", end_color="E2EFDA", fill_type="solid") # Verde claro (fundo dos dados)
+    fill_total = PatternFill(start_color="C6E0B4", end_color="C6E0B4", fill_type="solid") # Verde um pouco mais escuro (fundo totais)
+
+    # Construir cabeçalhos
+    headers = ["Código", "Descrição", "Fornecedor"] + [MAPA_LOJAS[l] for l in LOJAS] + ["TOTAL GERAL"]
+    ws.append(headers)
+
+    # Aplicar estilo nos cabeçalhos
+    for col_num, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col_num)
+        cell.fill = fill_header
+        cell.font = font_header
+        cell.alignment = align_center
+        cell.border = border_thin
+
+    current_row = 2
+    for fornecedor in nomes_forn:
+        df_f = df_all[df_all["Fornecedor"] == fornecedor]
+        for _, row in df_f.iterrows():
+            
+            c_cod = ws.cell(row=current_row, column=1, value=row["Código"])
+            c_cod.alignment = align_center
+            c_cod.fill = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
+
+            c_desc = ws.cell(row=current_row, column=2, value=row.get("Descrição", ""))
+            c_desc.alignment = align_left
+            c_desc.fill = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
+
+            c_forn = ws.cell(row=current_row, column=3, value=fornecedor)
+            c_forn.alignment = align_center
+            c_forn.fill = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
+
+            total_linha = 0
+            for i, loja in enumerate(LOJAS):
+                val = row.get(loja, 0)
+                total_linha += val
+                c_qty = ws.cell(row=current_row, column=4+i, value=val)
+                c_qty.alignment = align_center
+                c_qty.fill = fill_qty # Destacar área de edição/quantidades
+
+            c_tot = ws.cell(row=current_row, column=4+len(LOJAS), value=total_linha)
+            c_tot.alignment = align_center
+            c_tot.font = Font(bold=True)
+            c_tot.fill = fill_total
+
+            for col_num in range(1, len(headers)+1):
+                ws.cell(row=current_row, column=col_num).border = border_thin
+
+            current_row += 1
+
+    # Larguras das colunas
+    ws.column_dimensions['A'].width = 10
+    ws.column_dimensions['B'].width = 45
+    ws.column_dimensions['C'].width = 25
+    for i in range(len(LOJAS)):
+        ws.column_dimensions[get_column_letter(4+i)].width = 10
+    ws.column_dimensions[get_column_letter(4+len(LOJAS))].width = 15
+
+    # Auto-Filtro
+    ws.auto_filter.ref = f"A1:{get_column_letter(len(headers))}1"
+
+    buffer = io.BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    return buffer
+
 
 # ─────────────────────────────────────────────
 # SISTEMA DE LOGIN
@@ -516,10 +608,11 @@ with st.sidebar:
     st.divider()
 
     if acesso_total:
+        # Alterada a ordem aqui para iniciar direto na Visão por Fornecedor
         perfil_navegacao = st.radio("📍 Navegação:", [
+            "Visão por Fornecedor (Resumo)",
             "Separação e Fechamento",
             "Visão das Lojas",
-            "Visão por Fornecedor (Resumo)",
             "Catálogo de Produtos"
         ])
     else:
@@ -949,7 +1042,32 @@ elif perfil_navegacao == "Visão por Fornecedor (Resumo)":
 </div>""", unsafe_allow_html=True)
 
     st.divider()
-    _, col_print = st.columns([8, 2])
+    
+    # ─────────────────────────────────────────────
+    # BOTÕES DE EXPORTAÇÃO E IMPRESSÃO
+    # ─────────────────────────────────────────────
+    col_csv, col_excel, col_space, col_print = st.columns([1.5, 1.5, 4.5, 2.5])
+    
+    with col_csv:
+        # Preparação do DataFrame consolidado para CSV
+        df_csv = pd.DataFrame()
+        for forn in nomes_forn:
+            df_f = df_all[df_all["Fornecedor"] == forn].copy()
+            if not df_f.empty:
+                df_csv = pd.concat([df_csv, df_f], ignore_index=True)
+                
+        if not df_csv.empty:
+            df_csv = df_csv[["Código", "Descrição", "Fornecedor"] + LOJAS]
+            df_csv["TOTAL GERAL"] = df_csv[LOJAS].sum(axis=1)
+            df_csv = df_csv.rename(columns=MAPA_LOJAS)
+            csv_str = df_csv.to_csv(index=False).encode('utf-8')
+            st.download_button("⬇️ Exportar CSV", data=csv_str, file_name="visao_fornecedor.csv", mime="text/csv", use_container_width=True)
+
+    with col_excel:
+        if not df_all.empty:
+            excel_buffer = gerar_excel_fornecedor(df_all, nomes_forn)
+            st.download_button("⬇️ Exportar Excel", data=excel_buffer, file_name="visao_fornecedor.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
+
     with col_print:
         if st.button("🖨️ Imprimir Resumo Geral", use_container_width=True):
             components.html(
