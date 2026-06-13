@@ -333,7 +333,7 @@ def notificar_telegram(mensagem):
         bot_token = st.secrets["telegram"]["bot_token"]
         chat_id = st.secrets["telegram"]["chat_id"]
         url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-        payload = {"chat_id": chat_id, "text": mensagem}
+        payload = {"chat_id": chat_id, "text": message}
         resposta = requests.post(url, json=payload)
         return resposta.status_code == 200
     except KeyError:
@@ -456,8 +456,7 @@ def gerar_excel_fornecedor(df_all, nomes_forn):
     ws = wb.active
     ws.title = "Resumo por Fornecedor"
 
-    # Definição de cores similares à planilha FLV
-    fill_header = PatternFill(start_color="D96B27", end_color="D96B27", fill_type="solid") # Marrom / Laranja escuro
+    fill_header = PatternFill(start_color="D96B27", end_color="D96B27", fill_type="solid") 
     font_header = Font(color="FFFFFF", bold=True)
     align_center = Alignment(horizontal="center", vertical="center")
     align_left = Alignment(horizontal="left", vertical="center")
@@ -468,14 +467,12 @@ def gerar_excel_fornecedor(df_all, nomes_forn):
         bottom=Side(style='thin', color='A6A6A6')
     )
 
-    fill_qty = PatternFill(start_color="E2EFDA", end_color="E2EFDA", fill_type="solid") # Verde claro (fundo dos dados)
-    fill_total = PatternFill(start_color="C6E0B4", end_color="C6E0B4", fill_type="solid") # Verde um pouco mais escuro (fundo totais)
+    fill_qty = PatternFill(start_color="E2EFDA", end_color="E2EFDA", fill_type="solid") 
+    fill_total = PatternFill(start_color="C6E0B4", end_color="C6E0B4", fill_type="solid") 
 
-    # Construir cabeçalhos
     headers = ["Código", "Descrição", "Fornecedor"] + [MAPA_LOJAS[l] for l in LOJAS] + ["TOTAL GERAL"]
     ws.append(headers)
 
-    # Aplicar estilo nos cabeçalhos
     for col_num, header in enumerate(headers, 1):
         cell = ws.cell(row=1, column=col_num)
         cell.fill = fill_header
@@ -506,7 +503,7 @@ def gerar_excel_fornecedor(df_all, nomes_forn):
                 total_linha += val
                 c_qty = ws.cell(row=current_row, column=4+i, value=val)
                 c_qty.alignment = align_center
-                c_qty.fill = fill_qty # Destacar área de edição/quantidades
+                c_qty.fill = fill_qty 
 
             c_tot = ws.cell(row=current_row, column=4+len(LOJAS), value=total_linha)
             c_tot.alignment = align_center
@@ -518,7 +515,6 @@ def gerar_excel_fornecedor(df_all, nomes_forn):
 
             current_row += 1
 
-    # Larguras das colunas
     ws.column_dimensions['A'].width = 10
     ws.column_dimensions['B'].width = 45
     ws.column_dimensions['C'].width = 25
@@ -526,7 +522,6 @@ def gerar_excel_fornecedor(df_all, nomes_forn):
         ws.column_dimensions[get_column_letter(4+i)].width = 10
     ws.column_dimensions[get_column_letter(4+len(LOJAS))].width = 15
 
-    # Auto-Filtro
     ws.auto_filter.ref = f"A1:{get_column_letter(len(headers))}1"
 
     buffer = io.BytesIO()
@@ -608,7 +603,6 @@ with st.sidebar:
     st.divider()
 
     if acesso_total:
-        # Alterada a ordem aqui para iniciar direto na Visão por Fornecedor
         perfil_navegacao = st.radio("📍 Navegação:", [
             "Visão por Fornecedor (Resumo)",
             "Separação e Fechamento",
@@ -905,12 +899,10 @@ elif perfil_navegacao == "Visão das Lojas":
         with col_aviso:
             st.write("<br>", unsafe_allow_html=True)
             if st.button("🚫 Sem Pedido Hoje", use_container_width=True):
-                # Zera a loja atual na base de dados
                 df_main = carregar_pedidos()
                 df_main[loja_selecionada] = 0
                 salvar_pedidos(df_main)
                 
-                # Envia o aviso via Telegram
                 msg_aviso = f"🚨 *AVISO - Açougue Especial*\nA {loja_selecionada} informou que *NÃO* fará pedido de peças nesta semana."
                 enviado = notificar_telegram(msg_aviso)
                 
@@ -1044,12 +1036,11 @@ elif perfil_navegacao == "Visão por Fornecedor (Resumo)":
     st.divider()
     
     # ─────────────────────────────────────────────
-    # BOTÕES DE EXPORTAÇÃO E IMPRESSÃO
+    # BOTÕES DE EXPORTAÇÃO, IMPRESSÃO E LIMPEZA
     # ─────────────────────────────────────────────
-    col_csv, col_excel, col_space, col_print = st.columns([1.5, 1.5, 4.5, 2.5])
+    col_csv, col_excel, col_space, col_print, col_zerar = st.columns([1.5, 1.5, 2.0, 2.5, 2.5])
     
     with col_csv:
-        # Preparação do DataFrame consolidado para CSV
         df_csv = pd.DataFrame()
         for forn in nomes_forn:
             df_f = df_all[df_all["Fornecedor"] == forn].copy()
@@ -1084,6 +1075,10 @@ elif perfil_navegacao == "Visão por Fornecedor (Resumo)":
                 "</script>",
                 height=0
             )
+
+    with col_zerar:
+        if st.button("🚨 Zerar Todos os Pedidos", use_container_width=True):
+            modal_zerar_pedidos()
 
 # ─────────────────────────────────────────────
 # ROTA 4 — CATÁLOGO DE PRODUTOS
@@ -1153,7 +1148,7 @@ elif perfil_navegacao == "Catálogo de Produtos":
             if st.button("💾 Salvar Catálogo", type="primary", use_container_width=True):
                 salvar_catalogo(edited_cat)
                 st.session_state['reset_counter_acougue_especial'] += 1
-                st.success("✅ Catálogo atualizado com sucesso!")
+                st.success("✅ Catálogo updated com sucesso!")
                 st.rerun()
 
         with col_sync:
