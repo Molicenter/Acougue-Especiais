@@ -10,7 +10,6 @@ from streamlit_gsheets import GSheetsConnection
 # ─────────────────────────────────────────────
 from openpyxl import Workbook
 from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
-from openpyxl.utils import get_column_letter
 
 # ─────────────────────────────────────────────
 # CONFIGURAÇÃO DA PÁGINA
@@ -316,6 +315,69 @@ produtos_iniciais = [
 ]
 
 # ─────────────────────────────────────────────
+# FUNÇÃO DE ESTILIZAÇÃO DE EXCEL COM CORES
+# ─────────────────────────────────────────────
+def gerar_excel_estilizado(df, sheet_name="Resumo"):
+    buffer = io.BytesIO()
+    with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name=sheet_name)
+        worksheet = writer.sheets[sheet_name]
+
+        # Estilos com as cores do App
+        header_fill = PatternFill(start_color='6B1D1D', end_color='6B1D1D', fill_type='solid') # Vermelho Escuro
+        alt_row_fill = PatternFill(start_color='F9F2F2', end_color='F9F2F2', fill_type='solid') # Fundo alternado
+        header_font = Font(color='FFFFFF', bold=True)
+        border_style = Border(
+            left=Side(style='thin', color='CCCCCC'),
+            right=Side(style='thin', color='CCCCCC'),
+            top=Side(style='thin', color='CCCCCC'),
+            bottom=Side(style='thin', color='CCCCCC')
+        )
+
+        for row_idx, row in enumerate(worksheet.iter_rows(min_row=1, max_row=worksheet.max_row, min_col=1, max_col=worksheet.max_column)):
+            for cell in row:
+                cell.border = border_style
+                if row_idx == 0:
+                    # Formata o Cabeçalho
+                    cell.fill = header_fill
+                    cell.font = header_font
+                    cell.alignment = Alignment(horizontal='center', vertical='center')
+                else:
+                    # Fundo alternado para as linhas
+                    if row_idx % 2 == 0:
+                        cell.fill = alt_row_fill
+                    
+                    # Alinhamento dinâmico: Centraliza números e deixa textos à esquerda
+                    if isinstance(cell.value, (int, float)):
+                        cell.alignment = Alignment(horizontal='center', vertical='center')
+                    else:
+                        cell.alignment = Alignment(horizontal='left', vertical='center')
+
+        # Autoajuste de largura das colunas
+        for col in worksheet.columns:
+            max_length = 0
+            col_letter = col[0].column_letter
+            for cell in col:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            worksheet.column_dimensions[col_letter].width = max_length + 2
+
+        # 🖨️ CONFIGURAÇÃO AUTOMÁTICA DE IMPRESSÃO
+        worksheet.sheet_properties.pageSetUpPr.fitToPage = True
+        worksheet.page_setup.fitToWidth = 1
+        worksheet.page_setup.fitToHeight = False
+        worksheet.page_setup.orientation = worksheet.ORIENTATION_LANDSCAPE
+        worksheet.page_margins.left = 0.25
+        worksheet.page_margins.right = 0.25
+        worksheet.page_margins.top = 0.75
+        worksheet.page_margins.bottom = 0.75
+
+    return buffer.getvalue()
+
+# ─────────────────────────────────────────────
 # CONEXÃO GOOGLE SHEETS & FUNÇÕES DE DADOS
 # ─────────────────────────────────────────────
 conn = st.connection("gsheets", type=GSheetsConnection)
@@ -333,7 +395,7 @@ def notificar_telegram(mensagem):
         bot_token = st.secrets["telegram"]["bot_token"]
         chat_id = st.secrets["telegram"]["chat_id"]
         url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-        payload = {"chat_id": chat_id, "text": message}
+        payload = {"chat_id": chat_id, "text": mensagem}
         resposta = requests.post(url, json=payload)
         return resposta.status_code == 200
     except KeyError:
@@ -447,87 +509,6 @@ def salvar_catalogo(df_to_save):
     df_clean = df_to_save.drop(columns=["Descrição"], errors="ignore")
     conn.update(worksheet=WS_PRODUTOS, data=df_clean)
     st.cache_data.clear()
-
-# ─────────────────────────────────────────────
-# FUNÇÃO PARA EXCEL ESTILIZADO (VISÃO FORNECEDOR)
-# ─────────────────────────────────────────────
-def gerar_excel_fornecedor(df_all, nomes_forn):
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "Resumo por Fornecedor"
-
-    fill_header = PatternFill(start_color="D96B27", end_color="D96B27", fill_type="solid") 
-    font_header = Font(color="FFFFFF", bold=True)
-    align_center = Alignment(horizontal="center", vertical="center")
-    align_left = Alignment(horizontal="left", vertical="center")
-    border_thin = Border(
-        left=Side(style='thin', color='A6A6A6'),
-        right=Side(style='thin', color='A6A6A6'),
-        top=Side(style='thin', color='A6A6A6'),
-        bottom=Side(style='thin', color='A6A6A6')
-    )
-
-    fill_qty = PatternFill(start_color="E2EFDA", end_color="E2EFDA", fill_type="solid") 
-    fill_total = PatternFill(start_color="C6E0B4", end_color="C6E0B4", fill_type="solid") 
-
-    headers = ["Código", "Descrição", "Fornecedor"] + [MAPA_LOJAS[l] for l in LOJAS] + ["TOTAL GERAL"]
-    ws.append(headers)
-
-    for col_num, header in enumerate(headers, 1):
-        cell = ws.cell(row=1, column=col_num)
-        cell.fill = fill_header
-        cell.font = font_header
-        cell.alignment = align_center
-        cell.border = border_thin
-
-    current_row = 2
-    for fornecedor in nomes_forn:
-        df_f = df_all[df_all["Fornecedor"] == fornecedor]
-        for _, row in df_f.iterrows():
-            
-            c_cod = ws.cell(row=current_row, column=1, value=row["Código"])
-            c_cod.alignment = align_center
-            c_cod.fill = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
-
-            c_desc = ws.cell(row=current_row, column=2, value=row.get("Descrição", ""))
-            c_desc.alignment = align_left
-            c_desc.fill = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
-
-            c_forn = ws.cell(row=current_row, column=3, value=fornecedor)
-            c_forn.alignment = align_center
-            c_forn.fill = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
-
-            total_linha = 0
-            for i, loja in enumerate(LOJAS):
-                val = row.get(loja, 0)
-                total_linha += val
-                c_qty = ws.cell(row=current_row, column=4+i, value=val)
-                c_qty.alignment = align_center
-                c_qty.fill = fill_qty 
-
-            c_tot = ws.cell(row=current_row, column=4+len(LOJAS), value=total_linha)
-            c_tot.alignment = align_center
-            c_tot.font = Font(bold=True)
-            c_tot.fill = fill_total
-
-            for col_num in range(1, len(headers)+1):
-                ws.cell(row=current_row, column=col_num).border = border_thin
-
-            current_row += 1
-
-    ws.column_dimensions['A'].width = 10
-    ws.column_dimensions['B'].width = 45
-    ws.column_dimensions['C'].width = 25
-    for i in range(len(LOJAS)):
-        ws.column_dimensions[get_column_letter(4+i)].width = 10
-    ws.column_dimensions[get_column_letter(4+len(LOJAS))].width = 15
-
-    ws.auto_filter.ref = f"A1:{get_column_letter(len(headers))}1"
-
-    buffer = io.BytesIO()
-    wb.save(buffer)
-    buffer.seek(0)
-    return buffer
 
 
 # ─────────────────────────────────────────────
@@ -728,11 +709,9 @@ if perfil_navegacao == "Separação e Fechamento":
             st.download_button("⬇️ CSV", data=csv, file_name="separacao_acougue_especial.csv", mime="text/csv", use_container_width=True)
 
         with col_excel:
-            buffer = io.BytesIO()
-            with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
-                df_exp = df_editado.copy().rename(columns=MAPA_LOJAS)
-                df_exp.to_excel(writer, index=False, sheet_name='Pedidos Acougue Especial')
-            st.download_button("⬇️ Excel", data=buffer.getvalue(), file_name="separacao_acougue_especial.xlsx",
+            df_exp = df_editado.copy().rename(columns=MAPA_LOJAS)
+            excel_data = gerar_excel_estilizado(df_exp, "Separação Acougue")
+            st.download_button("⬇️ Excel", data=excel_data, file_name="separacao_acougue_especial.xlsx",
                                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                                use_container_width=True)
 
@@ -754,7 +733,7 @@ if perfil_navegacao == "Separação e Fechamento":
                 )
 
         with col_zerar:
-            if st.button("🚨 Zerar Todos os Pedidos", use_container_width=True):
+            if st.button("🚨 Zerar Todos os Pedidos", use_container_width=True, key="btn_zerar_sep_esp"):
                 modal_zerar_pedidos()
 
 # ─────────────────────────────────────────────
@@ -1040,24 +1019,27 @@ elif perfil_navegacao == "Visão por Fornecedor (Resumo)":
     # ─────────────────────────────────────────────
     col_csv, col_excel, col_space, col_print, col_zerar = st.columns([1.5, 1.5, 2.0, 2.5, 2.5])
     
+    # Unifica as informações para que tanto CSV quanto Excel usem os mesmos dados
+    df_export = pd.DataFrame()
+    for forn in nomes_forn:
+        df_f = df_all[df_all["Fornecedor"] == forn].copy()
+        if not df_f.empty:
+            df_export = pd.concat([df_export, df_f], ignore_index=True)
+            
+    if not df_export.empty:
+        df_export = df_export[["Código", "Descrição", "Fornecedor"] + LOJAS]
+        df_export["TOTAL GERAL"] = df_export[LOJAS].sum(axis=1)
+        df_export = df_export.rename(columns=MAPA_LOJAS)
+
     with col_csv:
-        df_csv = pd.DataFrame()
-        for forn in nomes_forn:
-            df_f = df_all[df_all["Fornecedor"] == forn].copy()
-            if not df_f.empty:
-                df_csv = pd.concat([df_csv, df_f], ignore_index=True)
-                
-        if not df_csv.empty:
-            df_csv = df_csv[["Código", "Descrição", "Fornecedor"] + LOJAS]
-            df_csv["TOTAL GERAL"] = df_csv[LOJAS].sum(axis=1)
-            df_csv = df_csv.rename(columns=MAPA_LOJAS)
-            csv_str = df_csv.to_csv(index=False).encode('utf-8')
+        if not df_export.empty:
+            csv_str = df_export.to_csv(index=False).encode('utf-8')
             st.download_button("⬇️ Exportar CSV", data=csv_str, file_name="visao_fornecedor.csv", mime="text/csv", use_container_width=True)
 
     with col_excel:
-        if not df_all.empty:
-            excel_buffer = gerar_excel_fornecedor(df_all, nomes_forn)
-            st.download_button("⬇️ Exportar Excel", data=excel_buffer, file_name="visao_fornecedor.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
+        if not df_export.empty:
+            excel_data = gerar_excel_estilizado(df_export, "Visão Fornecedores")
+            st.download_button("⬇️ Exportar Excel", data=excel_data, file_name="visao_fornecedor.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
 
     with col_print:
         if st.button("🖨️ Imprimir Resumo Geral", use_container_width=True):
@@ -1077,7 +1059,7 @@ elif perfil_navegacao == "Visão por Fornecedor (Resumo)":
             )
 
     with col_zerar:
-        if st.button("🚨 Zerar Todos os Pedidos", use_container_width=True):
+        if st.button("🚨 Zerar Todos os Pedidos", use_container_width=True, key="btn_zerar_forn_esp"):
             modal_zerar_pedidos()
 
 # ─────────────────────────────────────────────
@@ -1148,7 +1130,7 @@ elif perfil_navegacao == "Catálogo de Produtos":
             if st.button("💾 Salvar Catálogo", type="primary", use_container_width=True):
                 salvar_catalogo(edited_cat)
                 st.session_state['reset_counter_acougue_especial'] += 1
-                st.success("✅ Catálogo updated com sucesso!")
+                st.success("✅ Catálogo atualizado com sucesso!")
                 st.rerun()
 
         with col_sync:
@@ -1174,6 +1156,6 @@ elif perfil_navegacao == "Catálogo de Produtos":
                     st.rerun()
                 except Exception as e:
                     if "No database configured" in str(e) or "missing" in str(e).lower():
-                         st.error("⚠️ Aviso: As credenciais de acesso ao PostgreSQL não foram encontradas no painel Secrets.")
+                        st.error("⚠️ Aviso: As credenciais de acesso ao PostgreSQL não foram encontradas no painel Secrets.")
                     else:
-                         st.error(f"⚠️ Erro ao buscar nomes no banco ERP: {e}")
+                        st.error(f"⚠️ Erro ao buscar nomes no banco ERP: {e}")
