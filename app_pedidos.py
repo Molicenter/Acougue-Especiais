@@ -231,13 +231,15 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
     }
     table.print-table tr { break-inside: avoid !important; page-break-inside: avoid !important; }
 
+    /* Ajuste para 6 colunas na visão de loja */
     table.print-loja { font-size: 10px !important; }
-    table.print-loja th:nth-child(1), table.print-loja td:nth-child(1) { width: 15% !important; text-align: left !important; }
-    table.print-loja th:nth-child(2), table.print-loja td:nth-child(2) { width: 10% !important; text-align: center !important; }
-    table.print-loja th:nth-child(3), table.print-loja td:nth-child(3) { width: 45% !important; text-align: left !important; }
-    table.print-loja th:nth-child(4), table.print-loja td:nth-child(4) { width: 15% !important; text-align: center !important; }
-    table.print-loja th:nth-child(5), table.print-loja td:nth-child(5) {
-        width: 15% !important; text-align: center !important;
+    table.print-loja th:nth-child(1), table.print-loja td:nth-child(1) { width: 12% !important; text-align: left !important; }
+    table.print-loja th:nth-child(2), table.print-loja td:nth-child(2) { width: 8% !important; text-align: center !important; }
+    table.print-loja th:nth-child(3), table.print-loja td:nth-child(3) { width: 40% !important; text-align: left !important; }
+    table.print-loja th:nth-child(4), table.print-loja td:nth-child(4) { width: 12% !important; text-align: center !important; }
+    table.print-loja th:nth-child(5), table.print-loja td:nth-child(5) { width: 12% !important; text-align: center !important; }
+    table.print-loja th:nth-child(6), table.print-loja td:nth-child(6) {
+        width: 16% !important; text-align: center !important;
         font-weight: bold !important; background-color: #eeeeee !important;
         -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
     }
@@ -384,6 +386,7 @@ conn = st.connection("gsheets", type=GSheetsConnection)
 
 WS_PRODUTOS = "AcEspeciais_Produtos"
 WS_PEDIDOS  = "AcEspeciais_Pecas"
+WS_MEDIA_90D = "AcEspeciais_90d"  # NOVO ABA MÉDIA 90D
 
 def parse_bool(x):
     if isinstance(x, bool): return x
@@ -501,6 +504,16 @@ def carregar_pedidos():
 
     return df_pedidos
 
+@st.cache_data(ttl=60)
+def carregar_media_90d():
+    try:
+        df = conn.read(worksheet=WS_MEDIA_90D, ttl=0)
+        if df.empty or "codigo" not in df.columns:
+            return pd.DataFrame(columns=["loja", "codigo", "qtde_media_semanal"])
+        return df
+    except Exception as e:
+        return pd.DataFrame(columns=["loja", "codigo", "qtde_media_semanal"])
+
 def salvar_pedidos(df_to_save):
     conn.update(worksheet=WS_PEDIDOS, data=df_to_save)
     st.cache_data.clear()
@@ -609,6 +622,25 @@ with st.sidebar:
         st.cache_data.clear()
         st.session_state['reset_counter_acougue_especial'] += 1
         st.rerun()
+
+    # -- NOVO BOTÃO DE ATUALIZAR MÉDIA 90D --
+    if st.button("📊 Atualizar média 90d", use_container_width=True):
+        try:
+            conn_pg = st.connection("banco_erp", type="sql")
+            query_media = 'SELECT loja, codigo, qtde_media_semanal FROM "python_90dSEMANA"'
+            df_media = conn_pg.query(query_media, ttl=0)
+            
+            if not df_media.empty:
+                conn.update(worksheet=WS_MEDIA_90D, data=df_media)
+                st.success("✅ Média 90d sincronizada do ERP para o Sheets!")
+                st.cache_data.clear()
+            else:
+                st.warning("Nenhum dado retornado da view.")
+        except Exception as e:
+            if "No database configured" in str(e) or "missing" in str(e).lower():
+                st.error("⚠️ Aviso: As credenciais do banco_erp também precisam estar nos Secrets do Streamlit.")
+            else:
+                st.error(f"⚠️ Erro ao atualizar média 90d do PostgreSQL: {e}")
 
     st.write("<br>", unsafe_allow_html=True)
 
@@ -782,15 +814,16 @@ elif perfil_navegacao == "Visão das Lojas":
     df_loja_view[loja_selecionada] = df_loja_view[loja_selecionada].fillna(0).astype(int)
     df_loja_view = df_loja_view.rename(columns={loja_selecionada: "Qtde"})
 
+    mapa_banco_erp = {
+        "Loja 01": "001", "Loja 02": "002", "Loja 03": "003",
+        "Loja 04": "004", "Loja 05": "005", "Loja 06": "006",
+        "Loja 07": "007", "Loja 08": "008"
+    }
+    cod_empresa_banco = mapa_banco_erp.get(loja_selecionada, "001")
+
+    # 1. Puxar Estoque do ERP
     try:
         conn_pg = st.connection("banco_erp", type="sql")
-
-        mapa_banco_erp = {
-            "Loja 01": "001", "Loja 02": "002", "Loja 03": "003",
-            "Loja 04": "004", "Loja 05": "005", "Loja 06": "006",
-            "Loja 07": "007", "Loja 08": "008"
-        }
-        cod_empresa_banco = mapa_banco_erp.get(loja_selecionada, "001")
 
         query_erp = f"""
             SELECT cade_codempresa,
@@ -817,9 +850,26 @@ elif perfil_navegacao == "Visão das Lojas":
              st.error(f"⚠️ Erro ao puxar dados do ERP PostgreSQL: {e}")
         df_loja_view["Estoque"] = 0
 
+    # 2. Puxar Média 90d do Google Sheets
+    df_media_all = carregar_media_90d()
+    if not df_media_all.empty and "loja" in df_media_all.columns:
+        # Filtra a média apenas da loja atual
+        df_media_loja = df_media_all[df_media_all["loja"].astype(str).str.zfill(3) == cod_empresa_banco].copy()
+        df_media_loja = df_media_loja.rename(columns={"codigo": "Código", "qtde_media_semanal": "Média 90d"})
+        df_media_loja = df_media_loja.drop_duplicates(subset=["Código"])
+        df_media_loja["Código"] = pd.to_numeric(df_media_loja["Código"], errors='coerce').fillna(0).astype(int)
+    else:
+        df_media_loja = pd.DataFrame(columns=["Código", "Média 90d"])
+
+    df_loja_view = pd.merge(df_loja_view, df_media_loja[["Código", "Média 90d"]], on="Código", how="left")
+
+    # Trata Nulos
     df_loja_view["Estoque"] = df_loja_view["Estoque"].fillna(0).astype(int)
+    df_loja_view["Média 90d"] = pd.to_numeric(df_loja_view["Média 90d"], errors='coerce').fillna(0.0).round(2)
     df_loja_view["Qtde"] = df_loja_view["Qtde"].fillna(0).astype(int)
-    df_loja_view = df_loja_view[["Fornecedor", "Código", "Descrição", "Estoque", "Qtde"]]
+    
+    # Ordena colunas
+    df_loja_view = df_loja_view[["Fornecedor", "Código", "Descrição", "Estoque", "Média 90d", "Qtde"]]
 
     with st.container(border=True):
         st.info("💡 **Dica:** O **Estoque** foi preenchido automaticamente com base no sistema ERP. Você pode preencher apenas a **Qtde** do pedido.")
@@ -829,6 +879,7 @@ elif perfil_navegacao == "Visão das Lojas":
             "Código":     st.column_config.NumberColumn("Cód.", width=80, format="%d", disabled=True),
             "Descrição":  st.column_config.TextColumn("Produto", width=250, disabled=True),
             "Estoque":    st.column_config.NumberColumn("📦 Estoque", width=100, format="%d", disabled=True),
+            "Média 90d":  st.column_config.NumberColumn("📊 Média 90d", width=100, format="%.2f", disabled=True),
             "Qtde":       st.column_config.NumberColumn("🛒 Qtde", width=120, min_value=0, step=1),
         }
 
@@ -843,7 +894,7 @@ elif perfil_navegacao == "Visão das Lojas":
             )
 
         df_imprimir = df_editado.copy()
-        df_imprimir = df_imprimir.rename(columns={"Estoque": "Est.", "Qtde": "Ped."})
+        df_imprimir = df_imprimir.rename(columns={"Estoque": "Est.", "Média 90d": "Méd.90d", "Qtde": "Ped."})
         html_table_loja = df_imprimir.to_html(index=False, classes=["print-table", "print-loja"])
 
         st.markdown(f"""<div id="print-section">
