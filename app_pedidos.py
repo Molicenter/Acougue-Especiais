@@ -724,10 +724,10 @@ if perfil_navegacao == "Separação e Fechamento":
         html_table = df_editado.to_html(index=False, classes=["print-table", "print-sep"])
         st.markdown(f"""<div id="print-section">
 <h2 style="color: black; margin-bottom: 10px; text-align: center; border-bottom: 2px solid black; padding-bottom: 5px;">
-    Resumo de Separação — Açougue Especial
+    Visão por Fornecedor (Resumo) — Açougue Especial &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="font-size: 11px; font-weight: normal; color: #000000;">{agora}</span>
 </h2>
 <div class="print-container">
-{html_table}
+{html_print_content}
 </div>
 </div>""", unsafe_allow_html=True)
 
