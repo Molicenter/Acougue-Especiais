@@ -1029,7 +1029,7 @@ elif perfil_navegacao == "Visão por Fornecedor (Resumo)":
                     st.markdown('<div class="title-input">', unsafe_allow_html=True)
                     st.text_input(
                         "Fornecedor",
-                        value=f"🍖 {fornecedor}",
+                        value=f"🍗 {fornecedor}",
                         label_visibility="collapsed",
                         key=f"title_forn_{fornecedor}_{st.session_state['reset_counter_acougue_especial']}"
                     )
@@ -1061,7 +1061,7 @@ elif perfil_navegacao == "Visão por Fornecedor (Resumo)":
                                 f"<th>{loja}</th>",
                                 f"<th>{partes[0]}<br>{partes[1]}</th>"
                             )
-                    html_print_content += f"<h3 style='color: black; margin-top: 10px; margin-bottom: 4px;'>🍖 {fornecedor}</h3>\n"
+                    html_print_content += f"<h3 style='color: black; margin-top: 10px; margin-bottom: 4px;'>🍗 {fornecedor}</h3>\n"
                     html_print_content += f"{html_table}\n"
                     html_print_content += f"<div style='text-align:right; font-weight:bold; font-size:11px; margin-top:3px; margin-bottom: 8px; color: black;'>Total do Fornecedor: {total_geral} unidades</div>\n"
 
