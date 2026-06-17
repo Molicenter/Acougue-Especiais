@@ -4,3 +4,4 @@ st-gsheets-connection
 openpyxl
 SQLAlchemy
 psycopg2-binary
+pytz
