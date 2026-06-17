@@ -982,9 +982,9 @@ elif perfil_navegacao == "Visão por Fornecedor (Resumo)":
     </div>
     """, unsafe_allow_html=True)
 
-    # ADICIONA A DATA/HORA NA TELA LOGO ACIMA DO QUADRO
+   # ADICIONA A DATA/HORA NA TELA LOGO ACIMA DO QUADRO
     st.markdown(f"""
-    <div class="hide-print" style="text-align: right; color: var(--text-muted); font-size: 13px; margin-top: -10px; margin-bottom: 15px;">
+    <div class="hide-print" style="text-align: right; color: #ffffff; font-size: 15px; margin-top: -10px; margin-bottom: 15px;">
         Gerado em: <strong>{agora}</strong>
     </div>
     """, unsafe_allow_html=True)
