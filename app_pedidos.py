@@ -543,7 +543,7 @@ if st.session_state['usuario_logado_acougue_especial'] is None:
                 try:
                     st.image("passaro_logo.png", width=60)
                 except Exception:
-                    st.markdown("🍖", unsafe_allow_html=True)
+                    st.markdown("🍗", unsafe_allow_html=True)
 
             st.divider()
             usuarios_permitidos = ["Selecione..."] + ["Administrador"] + LOJAS
@@ -590,7 +590,7 @@ with st.sidebar:
     try:
         st.image("passaro_logo.png", width=72)
     except Exception:
-        st.markdown("🍖")
+        st.markdown("🍗")
 
     st.markdown(f"### Olá, *{usuario_atual}*")
     st.caption("Sistema de Pedidos — Açougue Especial")
@@ -783,7 +783,7 @@ elif perfil_navegacao == "Visão das Lojas":
         st.markdown(f"""
         <div class="topbar-loja hide-print">
             <div class="topbar-left">
-                <span style="font-size:22px">🍖</span>
+                <span style="font-size:22px">🍗</span>
                 <div>
                     <div class="topbar-title">{loja_selecionada} — Açougue Especial <span class="erp-badge">🟢 Conectado ao ERP</span></div>
                     <div class="topbar-sub">Preencha a quantidade de cada produto</div>
@@ -964,7 +964,7 @@ elif perfil_navegacao == "Visão das Lojas":
 elif perfil_navegacao == "Visão por Fornecedor (Resumo)":
     st.markdown("""
     <div class="hide-print" style="background: linear-gradient(90deg, var(--red-dark) 0%, #1a0808 100%); padding: 14px 20px; border-radius: 10px; margin-bottom: 22px;">
-        <span style="font-size: 26px; margin-right: 12px;">🍖</span>
+        <span style="font-size: 26px; margin-right: 12px;">🍗</span>
         <div style="display: inline-block; vertical-align: top;">
             <div style="font-size: 20px; font-weight: 700; color: var(--text-header);">Visão por Fornecedor — Açougue Especial</div>
             <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Resumo consolidado agrupado pelas categorias/fornecedores de produtos</div>
