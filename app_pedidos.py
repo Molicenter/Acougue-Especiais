@@ -4,6 +4,8 @@ import io
 import requests
 import streamlit.components.v1 as components
 from streamlit_gsheets import GSheetsConnection
+from datetime import datetime
+import pytz
 
 # ─────────────────────────────────────────────
 # IMPORTAÇÕES PARA ESTILIZAÇÃO DO EXCEL
@@ -165,6 +167,10 @@ div[data-testid="stVerticalBlockBorderWrapper"]:hover {
 /* IMPRESSÃO */
 @media print {
     @page { size: A4 portrait; margin: 8mm 8mm; }
+
+    /* Ajustes para evitar o espaço em branco gigante na quebra de página */
+    .main .block-container { padding-top: 0 !important; margin-top: 0 !important; max-width: 100% !important; }
+    h3 { page-break-after: avoid !important; break-after: avoid !important; }
 
     .stApp, .main, body, html {
         background-color: #ffffff !important;
@@ -962,6 +968,10 @@ elif perfil_navegacao == "Visão das Lojas":
 # ROTA 3 — VISÃO POR FORNECEDOR / RESUMO (Admin)
 # ─────────────────────────────────────────────
 elif perfil_navegacao == "Visão por Fornecedor (Resumo)":
+    # CAPTURA A DATA E HORA ATUAL COM O FUSO HORÁRIO DE BRASÍLIA
+    fuso_br = pytz.timezone('America/Sao_Paulo')
+    agora = datetime.now(fuso_br).strftime('%d/%m/%Y %H:%M')
+
     st.markdown("""
     <div class="hide-print" style="background: linear-gradient(90deg, var(--red-dark) 0%, #1a0808 100%); padding: 14px 20px; border-radius: 10px; margin-bottom: 22px;">
         <span style="font-size: 26px; margin-right: 12px;">🍗</span>
@@ -969,6 +979,13 @@ elif perfil_navegacao == "Visão por Fornecedor (Resumo)":
             <div style="font-size: 20px; font-weight: 700; color: var(--text-header);">Visão por Fornecedor — Açougue Especial</div>
             <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Resumo consolidado agrupado pelas categorias/fornecedores de produtos</div>
         </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # ADICIONA A DATA/HORA NA TELA LOGO ACIMA DO QUADRO
+    st.markdown(f"""
+    <div class="hide-print" style="text-align: right; color: var(--text-muted); font-size: 13px; margin-top: -10px; margin-bottom: 15px;">
+        Gerado em: <strong>{agora}</strong>
     </div>
     """, unsafe_allow_html=True)
 
@@ -1052,7 +1069,7 @@ elif perfil_navegacao == "Visão por Fornecedor (Resumo)":
 
     st.markdown(f"""<div id="print-section">
 <h2 style="color: black; margin-bottom: 10px; text-align: center; border-bottom: 2px solid black; padding-bottom: 5px;">
-    Visão por Fornecedor (Resumo) — Açougue Especial
+    Visão por Fornecedor (Resumo) — Açougue Especial &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span style="font-size: 11px; font-weight: normal; color: #333;">{agora}</span>
 </h2>
 <div class="print-container">
 {html_print_content}
